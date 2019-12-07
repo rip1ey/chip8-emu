@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define LEN		64
 #define WIDTH 32
@@ -30,6 +31,7 @@ typedef struct
 	uint8_t delay_timer;
 } chip8;
 
-void print_usage(char *);
+void init_chip8_state(chip8 *);
+void load_rom(char *, chip8 *);
 
 #endif
