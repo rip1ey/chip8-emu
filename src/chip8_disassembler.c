@@ -245,25 +245,36 @@ void determine_E_opcode(uint16_t inst)
 
 void determine_F_opcode(uint16_t inst)
 {
+	unsigned char x = (inst & 0x0F00) >> 8;
+	
 	switch(inst & 0x00FF)
 	{
 		case 0x07:
+			printf("FX07 -> V%X = get_delay() (Sets VX to value of delay timer)\n", x);
 			break;
 		case 0x0A:
+			printf("FX0A -> V%X = key_press() (Sets VX to the key that is pressed)\n", x);
 			break;
 		case 0x15:
+			printf("FX15 -> delay timer = V%X (Sets the delay timer to VX)\n", x);
 			break;
 		case 0x18:
+			printf("FX18 -> sound_timer = V%X (Sets the sound timer to VX)\n", x);
 			break;
 		case 0x1E:
+			printf("FX1E -> ADD I, V%X (Sets register I to equal itself plus VX)\n", x);
 			break;
 		case 0x29:
+			printf("FX29 -> I = sprite location at V%X\n", x);
 			break;
 		case 0x33:
+			printf("FX33 -> Store binary coded decimal value of V%X in I\n", x);
 			break;
 		case 0x55:
+			printf("FX55 -> Store V0 to V%X (inclusive) starting at address in I\n", x);
 			break;
 		case 0x65:
+			printf("FX65 -> Fills V0 to V%X (inclusive) with values from memory starting at address in I\n", x);
 			break;
 	}
 }
