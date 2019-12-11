@@ -14,7 +14,6 @@ void read_instructions(chip8 *chip)
 	for(int i = 512; i < max_rom; i+=2)
 	{
 		uint16_t inst = ((chip->memory[i] << 8) | chip->memory[i+1]);
-		//printf("%04x ", inst);
 		decode_instruction(inst);
 	}
 }

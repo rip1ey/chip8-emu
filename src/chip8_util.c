@@ -17,6 +17,8 @@ void init_chip8_state(chip8 *chip)
 		chip->stack[j] = 0;
 		chip->v[j] = 0;
 	}
+
+	chip->pc = 512;
 }
 
 /*
