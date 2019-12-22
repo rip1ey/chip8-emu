@@ -11,10 +11,15 @@ void exec_0_op(uint16_t inst, chip8 *chip)
 	switch(inst)
 	{
 		case 0x00E0:
-			printf("00E0\n");
+			printf("00E0 -> Clear screen\n");
+			clear_screen(chip);
+			chip->pc+=2;
 			break;
 		case 0x00EE:
-			printf("00EE\n");
+			printf("00EE -> Return from subroutine\n");
+			uint16_t ret_addr = chip->stack[chip->sp];
+			chip->sp--;
+			chip->pc = ret_addr;
 			break;
 		default:
 			printf("Unrecognized instruction\n");
@@ -24,76 +29,187 @@ void exec_0_op(uint16_t inst, chip8 *chip)
 
 void exec_1_op(uint16_t inst, chip8* chip)
 {
-
+	printf("1NNN -> Jump to addr NNN\n");
+	chip->pc = inst & 0x0FFF;
 }
 
+/*
+ * - Stack pointer needs to be moved up
+ * - The addr of new instruction needs to
+ *	 be saved on the stack
+ * - PC needs to be set to the addr NNN
+ */
 void exec_2_op(uint16_t inst, chip8* chip)
 {
-
+	printf("2NNN -> Call routine at addr NNN\n");
+	chip->sp++;
+	chip->stack[chip->sp] = chip->pc+2;
+	chip->pc = inst & 0x0FFF;
 }
 
 void exec_3_op(uint16_t inst, chip8* chip)
 {
+	printf("3XNN -> Skip next inst if Vx == NN\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t nn = inst & 0x00FF;
+
+	if(chip->v[x] == nn)
+	{
+		chip->pc+=2;
+	}
+
+	chip->pc+=2;
 }
 
 void exec_4_op(uint16_t inst, chip8* chip)
 {
+	printf("4XNN -> Skip next inst if Vx != NN\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t nn = inst * 0x00FF;
 
+	if(chip->v[x] != nn)
+	{
+		chip->pc+=2;
+	}
+
+	chip->pc+=2;
 }
 
 void exec_5_op(uint16_t inst, chip8* chip)
 {
+	printf("5XY0 -> Skip next inst if Vx == Vy\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t y = (inst & 0x00F0) >> 4;
 
+	if(chip->v[x] == chip->v[y])
+	{
+		chip->pc+=2;
+	}
+
+	chip->pc+=2;
 }
 
 void exec_6_op(uint16_t inst, chip8* chip)
 {
-	printf("Op 6\n");
+	printf("6XNN -> Set Vx to NN\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t nn = inst & 0x00FF;
+
+	chip->v[x] = nn;
+	chip->pc+=2;
 }
 
 void exec_7_op(uint16_t inst, chip8* chip)
 {
+	printf("7XNN -> Adds NN to Vx\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t nn = inst & 0x00FF;
 
+	chip->v[x] += nn;
+	chip->pc+=2;
 }
 
 void exec_8_op(uint16_t inst, chip8* chip)
 {
-
+	switch(inst & 0x000F)
+	{
+		case 1:
+			break;
+		case 2:
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		case 6:
+			break;
+		case 7:
+			break;
+	}
+	chip->pc+=2;
 }
 
 void exec_9_op(uint16_t inst, chip8* chip)
 {
+	printf("9XY0 -> Skip next inst if Vx != Vy\n");
+	uint8_t x = (inst & 0x0F00) >> 8;
+	uint8_t y = (inst & 0x00F0) >> 4;
 
+	if(chip->v[x] != chip->v[y])
+	{
+		chip->pc+=2;
+	}
+	chip->pc+=2;
 }
 
 void exec_A_op(uint16_t inst, chip8* chip)
 {
-	printf("Executing A opcode\n");
+	printf("ANNN -> I = addr NNN\n");
+
+	chip->i = inst & 0x0FFF;
+	chip->pc+=2;
 }
 
 void exec_B_op(uint16_t inst, chip8* chip)
 {
+	printf("BNNN -> Jump to addr NNN + V0\n");
 
+	chip->pc = (inst & 0x0FFF) + chip->v[0];
 }
 
 void exec_C_op(uint16_t inst, chip8* chip)
 {
+	chip->pc+=2;
 
 }
 
 void exec_D_op(uint16_t inst, chip8* chip)
 {
+	chip->pc+=2;
 
 }
 
 void exec_E_op(uint16_t inst, chip8* chip)
 {
+	chip->pc+=2;
 
 }
 
 void exec_F_op(uint16_t inst, chip8* chip)
 {
+	uint8_t x = (inst & 0x0F00) >> 8;
 
+	switch(inst & 0x00FF)
+	{
+		case 0x07:
+			printf("FX07 -> Set Vx to delay timer\n");
+			chip->v[x] = chip->delay_timer;
+			break;
+		case 0x0A:
+			printf("FX0A -> Set delay timer to Vx\n");
+			chip->delay_timer = chip->v[x];
+			break;
+		case 0x15:
+			printf("FX15 -> Set sound timer to Vx\n");
+			chip->sound_timer = chip->v[x];
+			break;
+		case 0x18:
+			break;
+		case 0x1E:
+			break;
+		case 0x29:
+			break;
+		case 0x33:
+			break;
+		case 0x55:
+			break;
+		case 0x65:
+			break;
+	}
+
+	chip->pc+=2;
 }
 
 int main(int argc, char *argv[])
@@ -110,23 +226,22 @@ int main(int argc, char *argv[])
 	load_rom(argv[1], &chip);
 
 	// cuts down on the giant switch statement
-	void (*func_arr[])(uint16_t, chip8*) = {
-												exec_0_op, exec_1_op, exec_2_op, exec_3_op,
-												exec_4_op, exec_5_op, exec_6_op, exec_7_op,
-												exec_8_op, exec_9_op, exec_A_op, exec_B_op,
-												exec_C_op, exec_D_op, exec_E_op, exec_F_op,
-										   };
+	void (*func_arr[])(uint16_t, chip8*) =
+	{
+		exec_0_op, exec_1_op, exec_2_op, exec_3_op,
+		exec_4_op, exec_5_op, exec_6_op, exec_7_op,
+		exec_8_op, exec_9_op, exec_A_op, exec_B_op,
+		exec_C_op, exec_D_op, exec_E_op, exec_F_op,
+	};
 
 	exit_chip8 = -2;
 	while(exit_chip8 != 3)
 	{
-		// fetch
 		uint8_t nibble = chip.memory[chip.pc] >> 4; 
 		uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1]; 
 		printf("Nibble: %02X\n", nibble);
 		printf("Instruction: %04X\n", inst);
 		func_arr[nibble](inst, &chip);
 		exit_chip8++;
-		chip.pc+=2;
 	}
 }

@@ -18,7 +18,21 @@ void init_chip8_state(chip8 *chip)
 		chip->v[j] = 0;
 	}
 
+	clear_screen(chip);
+
 	chip->pc = 512;
+}
+
+void clear_screen(chip8 *chip)
+{
+	for(int i = 0; i < HEIGHT; i++)
+	{
+		for(int j = 0; j < WIDTH; j++)
+		{
+			chip->graphics[j][i] = 0;
+		}
+	}
+
 }
 
 /*
