@@ -167,8 +167,51 @@ void exec_C_op(uint16_t inst, chip8* chip)
 
 void exec_D_op(uint16_t inst, chip8* chip)
 {
-	chip->pc+=2;
+  uint8_t x, y, n;
 
+  n = (inst & 0x000F);
+  x = chip->v[(inst & 0x0F00) >> 8] % WIDTH;
+  y = chip->v[(inst & 0x00F0) >> 4] % HEIGHT;
+
+  chip->v[0xF] = 0;
+  // grab the sprite data from memory location
+  // in i register
+  // for each byte in the sprite data, XOR it
+  // with the data that sits in the coordinate
+  // currently
+  for(int byte_num = 0; byte_num < n; byte_num++)
+  {
+    uint8_t bit_set = 0;
+    uint8_t mask = 0x80;
+    uint8_t sprite_byte = chip->memory[chip->i + byte_num];
+    for(int bit = 0, shift = 7; bit < 8; bit++)
+    {
+      // focus on leftmost bit we need
+      uint8_t fcs_sprite_bit = (sprite_byte & mask) >> shift;
+      uint8_t gfx_pixel = chip->graphics[x][y];
+      if(gfx_pixel)
+      {
+        bit_set = 1;
+      }
+      
+      chip->graphics[x][y] = fcs_sprite_bit ^ gfx_pixel;
+      // bit has been erased
+      if(gfx_pixel && !chip->graphics[x][y])
+      {
+        chip->v[0xF] = 1;
+      }
+      // check if any bits have been erased
+      // modify mask / shift
+      mask /= 2;
+      shift--;
+      x++;
+      x %= WIDTH;
+    }
+    y++;
+    y %= HEIGHT;
+  }
+  printf("DXYN -> Draw sprite\n");
+	chip->pc+=2;
 }
 
 void exec_E_op(uint16_t inst, chip8* chip)
@@ -188,24 +231,38 @@ void exec_F_op(uint16_t inst, chip8* chip)
 			chip->v[x] = chip->delay_timer;
 			break;
 		case 0x0A:
-			printf("FX0A -> Set delay timer to Vx\n");
-			chip->delay_timer = chip->v[x];
 			break;
 		case 0x15:
-			printf("FX15 -> Set sound timer to Vx\n");
-			chip->sound_timer = chip->v[x];
+			printf("FX15 -> Set delay timer to Vx\n");
+			chip->delay_timer = chip->v[x];
 			break;
 		case 0x18:
+			printf("FX18 -> Set sound timer to Vx\n");
+      chip->sound_timer = chip->v[x];
 			break;
 		case 0x1E:
+			printf("FX1E -> Add Vx to I\n");
+      chip->i += chip->v[x];
 			break;
 		case 0x29:
 			break;
 		case 0x33:
 			break;
 		case 0x55:
+      // stores v0-vx inclusive in memory
+      // starting at address in I
+      for(int i = 0; i < 16; i++)
+      {
+        chip->memory[chip->i + i] = chip->v[i];
+      }
 			break;
 		case 0x65:
+      // fill v0-vx with the contents of the addr
+      // contained in reg I
+      for(int i = 0; i < 16; i++)
+      {
+        chip->v[i] = chip->memory[chip->i + i]; 
+      }
 			break;
 	}
 

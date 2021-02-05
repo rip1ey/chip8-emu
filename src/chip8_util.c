@@ -19,7 +19,6 @@ void init_chip8_state(chip8 *chip)
 	}
 
 	clear_screen(chip);
-
 	chip->pc = 512;
 }
 
@@ -32,7 +31,6 @@ void clear_screen(chip8 *chip)
 			chip->graphics[j][i] = 0;
 		}
 	}
-
 }
 
 /*
