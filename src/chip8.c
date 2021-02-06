@@ -216,8 +216,14 @@ void exec_D_op(uint16_t inst, chip8* chip)
 
 void exec_E_op(uint16_t inst, chip8* chip)
 {
+  switch(inst & 0x00FF)
+  {
+    case 0x9E:
+      break;
+    case 0xA1:
+      break;
+  }
 	chip->pc+=2;
-
 }
 
 void exec_F_op(uint16_t inst, chip8* chip)
@@ -231,6 +237,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
 			chip->v[x] = chip->delay_timer;
 			break;
 		case 0x0A:
+      printf("FX0A -> key press is awaited, then stored in Vx\n");
 			break;
 		case 0x15:
 			printf("FX15 -> Set delay timer to Vx\n");
@@ -245,9 +252,22 @@ void exec_F_op(uint16_t inst, chip8* chip)
       chip->i += chip->v[x];
 			break;
 		case 0x29:
+      printf("FX29 -> Set reg I to sprite in Vx\n");
+      chip->i = chip->v[x];
 			break;
 		case 0x33:
+    {
+      uint8_t div = 100;
+      uint8_t dec_val = chip->v[x];
+      printf("FX33 -> Store binary coded decimal in I, I+1, I+2\n");
+      for(uint8_t i = 0; i < 3; i++)
+      {
+        chip->memory[chip->i + i] = dec_val / div;
+        dec_val %= div;
+        div /= 10;
+      }
 			break;
+    }
 		case 0x55:
       // stores v0-vx inclusive in memory
       // starting at address in I
