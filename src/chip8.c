@@ -65,7 +65,7 @@ void exec_4_op(uint16_t inst, chip8* chip)
 {
 	printf("4XNN -> Skip next inst if Vx != NN\n");
 	uint8_t x = (inst & 0x0F00) >> 8;
-	uint8_t nn = inst * 0x00FF;
+	uint8_t nn = inst & 0x00FF;
 
 	if(chip->v[x] != nn)
 	{
@@ -111,22 +111,46 @@ void exec_7_op(uint16_t inst, chip8* chip)
 
 void exec_8_op(uint16_t inst, chip8* chip)
 {
+  uint8_t x = (inst & 0x0F00) >> 8;
+  uint8_t y = (inst & 0x00F0) >> 4;
+
 	switch(inst & 0x000F)
 	{
-		case 1:
+    case 0x00:
+      printf("8XY0 -> Sets the value of Vx to the value of Vy\n");
+      chip->v[x] = chip->v[y];
+      break;
+		case 0x01:
+      printf("8XY1 -> Sets Vx to Vx OR Vy\n");
+      chip->v[x] |= chip->v[y];
 			break;
-		case 2:
+		case 0x02:
+      printf("8XY2 -> Sets Vx to Vx AND Vy\n");
+      chip->v[x] &= chip->v[y];
 			break;
-		case 3:
+		case 0x03:
+      printf("8XY3 -> Sets Vx to Vx XOR Vy\n");
+      chip->v[x] ^= chip->v[y];
 			break;
-		case 4:
+		case 0x04:
+      printf("8XY4 -> Add Vy to Vx, set VF to 1 if carry, 0 otherwise\n");
 			break;
-		case 5:
+		case 0x05:
+      printf("8XY5 -> Vy is subtracted from Vx, set VF to 1 if borrow, 0 otherwise\n");
 			break;
-		case 6:
+		case 0x06:
+      printf("8XY6 -> Stores the lsb of Vx into VF, shift Vx right by 1\n");
+      chip->v[0xF] = chip->v[x] & 0x0001;
+      chip->v[x] >>= 1;
 			break;
-		case 7:
+		case 0x07:
+      printf("8XY7 -> Set Vx to Vy minus Vx, VF is set to 0 when borrow, 1 otherwise\n");
 			break;
+    case 0x0E:
+      printf("8XYE -> Store msb of Vx in VF, shift Vx to left by 1\n");
+      chip->v[0xF] = (chip->v[x] & 0xF000) >> 7;
+      chip->v[x] <<= 1;
+      break;
 	}
 	chip->pc+=2;
 }
