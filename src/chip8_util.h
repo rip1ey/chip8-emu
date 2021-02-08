@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <time.h>
 #include <stdlib.h>
 
 #define WIDTH		64

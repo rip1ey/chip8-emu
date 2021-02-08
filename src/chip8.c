@@ -185,8 +185,13 @@ void exec_B_op(uint16_t inst, chip8* chip)
 
 void exec_C_op(uint16_t inst, chip8* chip)
 {
-	chip->pc+=2;
 
+  printf("CXNN -> Set Vx to the result of a bitwise AND on a random number NN\n");
+  uint8_t x = (inst & 0x0F00) >> 8;
+  uint8_t nn = (inst & 0x00FF);
+
+  chip->v[x] = (rand() % 255) & nn;
+	chip->pc+=2;
 }
 
 void exec_D_op(uint16_t inst, chip8* chip)
@@ -325,6 +330,7 @@ int main(int argc, char *argv[])
 
 	init_chip8_state(&chip);
 	load_rom(argv[1], &chip);
+  srand(time(0));
 
 	// cuts down on the giant switch statement
 	void (*func_arr[])(uint16_t, chip8*) =
