@@ -8,6 +8,8 @@ void print_emu_usage()
 
 void exec_0_op(uint16_t inst, chip8 *chip)
 {
+  uint16_t nnn = (inst & 0x0FFF);
+
 	switch(inst)
 	{
 		case 0x00E0:
@@ -22,7 +24,8 @@ void exec_0_op(uint16_t inst, chip8 *chip)
 			chip->pc = ret_addr;
 			break;
 		default:
-			printf("Unrecognized instruction\n");
+			printf("0NNN -> Call routine at NNN\n");
+      chip->pc = nnn;
 			break;
 	}
 }
@@ -255,6 +258,10 @@ void exec_E_op(uint16_t inst, chip8* chip)
 	chip->pc+=2;
 }
 
+/*
+ * If current inst is FX0A, only
+ * increase pc if a key is pressed
+ */
 void exec_F_op(uint16_t inst, chip8* chip)
 {
 	uint8_t x = (inst & 0x0F00) >> 8;
@@ -264,25 +271,39 @@ void exec_F_op(uint16_t inst, chip8* chip)
 		case 0x07:
 			printf("FX07 -> Set Vx to delay timer\n");
 			chip->v[x] = chip->delay_timer;
+      chip->pc+=2;
 			break;
 		case 0x0A:
       printf("FX0A -> key press is awaited, then stored in Vx\n");
+      for(int i = 0; i < 16; i++)
+      {
+        if(chip->keypad[i] == 1)
+        {
+          chip->v[x] = i;
+          chip->pc+=2;
+          break;
+        } 
+      }
 			break;
 		case 0x15:
 			printf("FX15 -> Set delay timer to Vx\n");
 			chip->delay_timer = chip->v[x];
+      chip->pc+=2;
 			break;
 		case 0x18:
 			printf("FX18 -> Set sound timer to Vx\n");
       chip->sound_timer = chip->v[x];
+      chip->pc+=2;
 			break;
 		case 0x1E:
 			printf("FX1E -> Add Vx to I\n");
       chip->i += chip->v[x];
+      chip->pc+=2;
 			break;
 		case 0x29:
       printf("FX29 -> Set reg I to sprite in Vx\n");
       chip->i = chip->v[x];
+      chip->pc+=2;
 			break;
 		case 0x33:
     {
@@ -295,6 +316,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
         dec_val %= div;
         div /= 10;
       }
+      chip->pc+=2;
 			break;
     }
 		case 0x55:
@@ -304,6 +326,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
       {
         chip->memory[chip->i + i] = chip->v[i];
       }
+      chip->pc+=2;
 			break;
 		case 0x65:
       // fill v0-vx with the contents of the addr
@@ -312,10 +335,10 @@ void exec_F_op(uint16_t inst, chip8* chip)
       {
         chip->v[i] = chip->memory[chip->i + i]; 
       }
+      chip->pc+=2;
 			break;
 	}
 
-	chip->pc+=2;
 }
 
 int main(int argc, char *argv[])
