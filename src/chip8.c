@@ -137,9 +137,26 @@ void exec_8_op(uint16_t inst, chip8* chip)
 			break;
 		case 0x04:
       printf("8XY4 -> Add Vy to Vx, set VF to 1 if carry, 0 otherwise\n");
+      chip->v[0xF] = 0;
+
+      if(chip->v[x] + chip->v[y] > 255)
+      {
+        chip->v[0xF] = 1;
+      }
+      chip->v[x] += chip->v[y];
 			break;
 		case 0x05:
-      printf("8XY5 -> Vy is subtracted from Vx, set VF to 1 if borrow, 0 otherwise\n");
+      printf("8XY5 -> Vy is subtracted from Vx, set VF to 0 if borrow, 1 otherwise\n");
+      if(chip->v[y] > chip->v[x])
+      {
+        chip->v[0xF] = 0;
+      }
+      else
+      {
+        chip->v[0xF] = 1;
+      }
+      
+      chip->v[x] -= chip->v[y];
 			break;
 		case 0x06:
       printf("8XY6 -> Stores the lsb of Vx into VF, shift Vx right by 1\n");
@@ -148,6 +165,16 @@ void exec_8_op(uint16_t inst, chip8* chip)
 			break;
 		case 0x07:
       printf("8XY7 -> Set Vx to Vy minus Vx, VF is set to 0 when borrow, 1 otherwise\n");
+      if(chip->v[x] > chip->v[y])
+      {
+        chip->v[0xF] = 0;
+      }
+      else
+      {
+        chip->v[0xF] = 1;
+      }
+
+      chip->v[x] = chip->v[y] - chip->v[x];
 			break;
     case 0x0E:
       printf("8XYE -> Store msb of Vx in VF, shift Vx to left by 1\n");
@@ -248,11 +275,22 @@ void exec_D_op(uint16_t inst, chip8* chip)
 
 void exec_E_op(uint16_t inst, chip8* chip)
 {
+  uint8_t x = (inst & 0x0F00) >> 8;
   switch(inst & 0x00FF)
   {
     case 0x9E:
+      printf("EX9E -> Skips next inst if key in Vx is pressed\n");
+      if(chip->keypad[chip->v[x]] == 1)
+      {
+        chip->pc+=2;
+      }
       break;
     case 0xA1:
+      printf("EXA1 -> Skips next inst if key in Vx isn't pressed\n");
+      if(chip->keypad[chip->v[x]] == 0)
+      {
+        chip->pc+=2;
+      }
       break;
   }
 	chip->pc+=2;
@@ -364,7 +402,7 @@ int main(int argc, char *argv[])
 		exec_C_op, exec_D_op, exec_E_op, exec_F_op,
 	};
 
-	exit_chip8 = -2;
+	exit_chip8 = -20;
 	while(exit_chip8 != 3)
 	{
 		uint8_t nibble = chip.memory[chip.pc] >> 4; 
