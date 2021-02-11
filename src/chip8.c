@@ -229,10 +229,10 @@ void exec_D_op(uint16_t inst, chip8* chip)
   uint8_t x, y, n;
 
   n = (inst & 0x000F);
-  x = chip->v[(inst & 0x0F00) >> 8] % WIDTH;
-  y = chip->v[(inst & 0x00F0) >> 4] % HEIGHT;
+  x = chip->v[(inst & 0x0F00) >> 8];
+  y = chip->v[(inst & 0x00F0) >> 4];
 
-  chip->v[0xF] = 0;
+  //chip->v[0xF] = 0;
   // grab the sprite data from memory location
   // in i register
   // for each byte in the sprite data, XOR it
@@ -245,29 +245,29 @@ void exec_D_op(uint16_t inst, chip8* chip)
     uint8_t sprite_byte = chip->memory[chip->i + byte_num];
     for(int bit = 0, shift = 7; bit < 8; bit++)
     {
+      int x_coord = (x + bit) % WIDTH;
+      int y_coord = (y + byte_num) % HEIGHT;
       // focus on leftmost bit we need
       uint8_t fcs_sprite_bit = (sprite_byte & mask) >> shift;
-      uint8_t gfx_pixel = chip->graphics[x][y];
+      uint8_t gfx_pixel = chip->graphics[x_coord][y_coord];
+      //printf("gfx[x][y] before xor: %d\n", chip->graphics[x_coord][y_coord]);
       if(gfx_pixel)
       {
         bit_set = 1;
       }
       
-      chip->graphics[x][y] = fcs_sprite_bit ^ gfx_pixel;
+      chip->graphics[x_coord][y_coord] = fcs_sprite_bit ^ gfx_pixel;
       // bit has been erased
-      if(gfx_pixel && !chip->graphics[x][y])
+      if(bit_set && !chip->graphics[x_coord][y_coord])
       {
         chip->v[0xF] = 1;
       }
       // check if any bits have been erased
       // modify mask / shift
+      //printf("sprite_byte: %d\nMask: %d\nShift: %d\nx: %d\ny: %d\ngfx[x][y] after xor: %d\n", sprite_byte, mask, shift, x, y, chip->graphics[x_coord][y_coord]);
       mask /= 2;
       shift--;
-      x++;
-      x %= WIDTH;
     }
-    y++;
-    y %= HEIGHT;
   }
   printf("DXYN -> Draw sprite\n");
 	chip->pc+=2;
@@ -375,41 +375,5 @@ void exec_F_op(uint16_t inst, chip8* chip)
       }
       chip->pc+=2;
 			break;
-	}
-
-}
-
-int main(int argc, char *argv[])
-{
-	chip8 chip;
-	int exit_chip8 = 0;
-
-	if(argc != 2)
-	{
-		print_emu_usage();
-	}
-
-	init_chip8_state(&chip);
-	load_rom(argv[1], &chip);
-  srand(time(0));
-
-	// cuts down on the giant switch statement
-	void (*func_arr[])(uint16_t, chip8*) =
-	{
-		exec_0_op, exec_1_op, exec_2_op, exec_3_op,
-		exec_4_op, exec_5_op, exec_6_op, exec_7_op,
-		exec_8_op, exec_9_op, exec_A_op, exec_B_op,
-		exec_C_op, exec_D_op, exec_E_op, exec_F_op,
-	};
-
-	exit_chip8 = -20;
-	while(exit_chip8 != 3)
-	{
-		uint8_t nibble = chip.memory[chip.pc] >> 4; 
-		uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1]; 
-		printf("Nibble: %02X\n", nibble);
-		printf("Instruction: %04X\n", inst);
-		func_arr[nibble](inst, &chip);
-		exit_chip8++;
 	}
 }
