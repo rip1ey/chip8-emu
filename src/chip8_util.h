@@ -36,6 +36,7 @@ typedef struct
 	uint8_t graphics[WIDTH][HEIGHT];
 } chip8;
 
+void print_registers(chip8 *);
 void clear_screen(chip8 *);
 void init_chip8_state(chip8 *);
 void load_rom(char *, chip8 *);

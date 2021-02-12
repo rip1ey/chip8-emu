@@ -5,6 +5,14 @@ void print_usage(char *prog_name)
 	printf("Usage:\n\t./%s <ROM>\n", prog_name);
 }
 
+void print_registers(chip8 *chip)
+{
+  for(int i = 0; i < 16; i++)
+  {
+    printf("V[%d]: %d\n", i, chip->v[i]);
+  }
+}
+
 uint8_t font_set[80] =
 {
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

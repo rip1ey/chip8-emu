@@ -33,7 +33,18 @@ void exec_0_op(uint16_t inst, chip8 *chip)
 void exec_1_op(uint16_t inst, chip8* chip)
 {
 	printf("1NNN -> Jump to addr NNN\n");
-	chip->pc = inst & 0x0FFF;
+  if((inst & 0x0FFF) < 512 || (inst & 0x0FFF) > 4096)
+  {
+    printf("Attempted to jump to address out of bounds. Exiting...\n");
+    exit(1);
+  }
+  else
+  {
+	  chip->pc = inst & 0x0FFF;
+  }
+  
+  uint16_t next_inst = chip->memory[chip->pc] << 8 | chip->memory[chip->pc + 1];
+  printf("Next instruction to be executed: %04X\n", next_inst);
 }
 
 /*
@@ -159,9 +170,9 @@ void exec_8_op(uint16_t inst, chip8* chip)
       chip->v[x] -= chip->v[y];
 			break;
 		case 0x06:
-      printf("8XY6 -> Stores the lsb of Vx into VF, shift Vx right by 1\n");
-      chip->v[0xF] = chip->v[x] & 0x0001;
-      chip->v[x] >>= 1;
+      printf("8XY6 -> Store value of Vy shifted right once in Vx. Set VF to lsb prior to shift\n");
+      chip->v[0xF] = chip->v[y] & 0x0001;
+      chip->v[x] = chip->v[y] >> 1;
 			break;
 		case 0x07:
       printf("8XY7 -> Set Vx to Vy minus Vx, VF is set to 0 when borrow, 1 otherwise\n");
@@ -177,9 +188,11 @@ void exec_8_op(uint16_t inst, chip8* chip)
       chip->v[x] = chip->v[y] - chip->v[x];
 			break;
     case 0x0E:
-      printf("8XYE -> Store msb of Vx in VF, shift Vx to left by 1\n");
-      chip->v[0xF] = (chip->v[x] & 0xF000) >> 7;
-      chip->v[x] <<= 1;
+      printf("8XYE -> Store value of Vy shifted left once in Vx. Set VF to msb prior to shift\n");
+      printf("IN 8XYE, MSB OF VY: %d, VALUE OF VY: %d, VF BEFORE SHIFT: %d\n", (chip->v[y] & 0x80) >> 7, chip->v[y], chip->v[0xF]);
+      chip->v[0xF] = chip->v[y] >> 7;
+      chip->v[x] = chip->v[y] << 1;
+      printf("VF AFTER SHIFT: %d\n", chip->v[0xF]);
       break;
 	}
 	chip->pc+=2;
@@ -232,7 +245,8 @@ void exec_D_op(uint16_t inst, chip8* chip)
   x = chip->v[(inst & 0x0F00) >> 8];
   y = chip->v[(inst & 0x00F0) >> 4];
 
-  //chip->v[0xF] = 0;
+  chip->v[0xF] = 0;
+  uint8_t bit_set = 0;
   // grab the sprite data from memory location
   // in i register
   // for each byte in the sprite data, XOR it
@@ -240,7 +254,6 @@ void exec_D_op(uint16_t inst, chip8* chip)
   // currently
   for(int byte_num = 0; byte_num < n; byte_num++)
   {
-    uint8_t bit_set = 0;
     uint8_t mask = 0x80;
     uint8_t sprite_byte = chip->memory[chip->i + byte_num];
     for(int bit = 0, shift = 7; bit < 8; bit++)
@@ -282,6 +295,7 @@ void exec_E_op(uint16_t inst, chip8* chip)
       printf("EX9E -> Skips next inst if key in Vx is pressed\n");
       if(chip->keypad[chip->v[x]] == 1)
       {
+        printf("KEY %d has been pressed\n", chip->v[x]);
         chip->pc+=2;
       }
       break;
@@ -289,6 +303,7 @@ void exec_E_op(uint16_t inst, chip8* chip)
       printf("EXA1 -> Skips next inst if key in Vx isn't pressed\n");
       if(chip->keypad[chip->v[x]] == 0)
       {
+        printf("KEY %d has not been pressed\n", chip->v[x]);
         chip->pc+=2;
       }
       break;
@@ -303,6 +318,7 @@ void exec_E_op(uint16_t inst, chip8* chip)
 void exec_F_op(uint16_t inst, chip8* chip)
 {
 	uint8_t x = (inst & 0x0F00) >> 8;
+  uint8_t key_pressed;
 
 	switch(inst & 0x00FF)
 	{
@@ -317,11 +333,14 @@ void exec_F_op(uint16_t inst, chip8* chip)
       {
         if(chip->keypad[i] == 1)
         {
+          printf("KEY %d has been pressed\n", i);
           chip->v[x] = i;
           chip->pc+=2;
+          key_pressed = i;
           break;
         } 
       }
+      chip->keypad[key_pressed] = 0;
 			break;
 		case 0x15:
 			printf("FX15 -> Set delay timer to Vx\n");
@@ -340,7 +359,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
 			break;
 		case 0x29:
       printf("FX29 -> Set reg I to sprite in Vx\n");
-      chip->i = chip->v[x];
+      chip->i = chip->v[x] * 5;
       chip->pc+=2;
 			break;
 		case 0x33:
@@ -360,7 +379,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
 		case 0x55:
       // stores v0-vx inclusive in memory
       // starting at address in I
-      for(int i = 0; i < 16; i++)
+      for(int i = 0; i <= x; i++)
       {
         chip->memory[chip->i + i] = chip->v[i];
       }
@@ -369,7 +388,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
 		case 0x65:
       // fill v0-vx with the contents of the addr
       // contained in reg I
-      for(int i = 0; i < 16; i++)
+      for(int i = 0; i <= x; i++)
       {
         chip->v[i] = chip->memory[chip->i + i]; 
       }
