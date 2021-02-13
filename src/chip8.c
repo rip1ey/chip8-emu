@@ -340,7 +340,6 @@ void exec_F_op(uint16_t inst, chip8* chip)
           break;
         } 
       }
-      chip->keypad[key_pressed] = 0;
 			break;
 		case 0x15:
 			printf("FX15 -> Set delay timer to Vx\n");

@@ -27,13 +27,133 @@ void draw_frame(SDL_Renderer **renderer, SDL_Rect *rect, chip8 *chip)
       }
       rect->x = x * SCALE;
       rect->y = y * SCALE;
-      printf("Index in actual chip8 array: %d, %d\n", x, y);
-      printf("Current pixel being drawn is at: %d, %d\n", rect->x, rect->y);
       SDL_RenderFillRect(*renderer, rect);
     }
   }
 
   SDL_RenderPresent(*renderer);
+}
+
+int register_input(SDL_Event *ev, chip8 *chip)
+{
+  while(SDL_PollEvent(ev))
+  {
+    printf("REGISTER INPUT!!!\n");
+    if(ev->type == SDL_QUIT)
+    {
+      return 1;
+    }
+    else if(ev->type == SDL_KEYDOWN)
+    {
+      switch(ev->key.keysym.sym)
+      {
+        case SDLK_1:
+          chip->keypad[0] = 1;
+          break;
+        case SDLK_2:
+          chip->keypad[1] = 1;
+          break;
+        case SDLK_3:
+          chip->keypad[2] = 1;
+          break;
+        case SDLK_4:
+          chip->keypad[3] = 1;
+          break;
+        case SDLK_q:
+          chip->keypad[4] = 1;
+          break;
+        case SDLK_w:
+          chip->keypad[5] = 1;
+          break;
+        case SDLK_e:
+          chip->keypad[6] = 1;
+          break;
+        case SDLK_r:
+          chip->keypad[7] = 1;
+          break;
+        case SDLK_a:
+          chip->keypad[8] = 1;
+          break;
+        case SDLK_s:
+          chip->keypad[9] = 1;
+          break;
+        case SDLK_d:
+          chip->keypad[10] = 1;
+          break;
+        case SDLK_f:
+          chip->keypad[11] = 1;
+          break;
+        case SDLK_z:
+          chip->keypad[12] = 1;
+          break;
+        case SDLK_x:
+          chip->keypad[13] = 1;
+          break;
+        case SDLK_c:
+          chip->keypad[14] = 1;
+          break;
+        case SDLK_v:
+          chip->keypad[15] = 1;
+          break;
+      }
+    }
+    else if(ev->type == SDL_KEYUP)
+    {
+      switch(ev->key.keysym.sym)
+      {
+        case SDLK_1:
+          chip->keypad[0] = 0;
+          break;
+        case SDLK_2:
+          chip->keypad[1] = 0;
+          break;
+        case SDLK_3:
+          chip->keypad[2] = 0;
+          break;
+        case SDLK_4:
+          chip->keypad[3] = 0;
+          break;
+        case SDLK_q:
+          chip->keypad[4] = 0;
+          break;
+        case SDLK_w:
+          chip->keypad[5] = 0;
+          break;
+        case SDLK_e:
+          chip->keypad[6] = 0;
+          break;
+        case SDLK_r:
+          chip->keypad[7] = 0;
+          break;
+        case SDLK_a:
+          chip->keypad[8] = 0;
+          break;
+        case SDLK_s:
+          chip->keypad[9] = 0;
+          break;
+        case SDLK_d:
+          chip->keypad[10] = 0;
+          break;
+        case SDLK_f:
+          chip->keypad[11] = 0;
+          break;
+        case SDLK_z:
+          chip->keypad[12] = 0;
+          break;
+        case SDLK_x:
+          chip->keypad[13] = 0;
+          break;
+        case SDLK_c:
+          chip->keypad[14] = 0;
+          break;
+        case SDLK_v:
+          chip->keypad[15] = 0;
+          break;
+      }
+    }
+
+  }
+  return 0;
 }
 
 int main(int argc, char *argv[])
@@ -90,8 +210,6 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-// -------------------
-
   init_chip8_state(&chip);
   load_rom(argv[1], &chip);
   srand(time(0));
@@ -108,19 +226,16 @@ int main(int argc, char *argv[])
   exit_chip8 = 0;
   while(!exit_chip8)
   {
-    while(SDL_PollEvent(&ev))
-    {
-      if(ev.type == SDL_QUIT)
-      {
-        exit_chip8 = 1;
-      }
-    }
+    exit_chip8 = register_input(&ev, &chip);
     uint8_t nibble = chip.memory[chip.pc] >> 4;
     uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
     printf("Nibble: %02X\n", nibble);
     printf("Instruction: %04X\n", inst);
     printf("PC: %04X\n", chip.pc);
     func_arr[nibble](inst, &chip);
+    print_registers(&chip);
     draw_frame(&renderer, &rect, &chip);
+    chip.delay_timer--;
+    chip.sound_timer--;
   }
 }
