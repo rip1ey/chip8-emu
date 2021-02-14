@@ -38,7 +38,6 @@ int register_input(SDL_Event *ev, chip8 *chip)
 {
   while(SDL_PollEvent(ev))
   {
-    printf("REGISTER INPUT!!!\n");
     if(ev->type == SDL_QUIT)
     {
       return 1;
@@ -156,6 +155,19 @@ int register_input(SDL_Event *ev, chip8 *chip)
   return 0;
 }
 
+void tick(chip8 *chip)
+{
+  if(chip->sound_timer > 0)
+  {
+    chip->sound_timer--;
+  }
+
+  if(chip->delay_timer > 0)
+  {
+    chip->delay_timer--;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   chip8 chip;
@@ -224,18 +236,36 @@ int main(int argc, char *argv[])
   };
 
   exit_chip8 = 0;
+  int num_frames = 1;
   while(!exit_chip8)
   {
-    exit_chip8 = register_input(&ev, &chip);
-    uint8_t nibble = chip.memory[chip.pc] >> 4;
-    uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
-    printf("Nibble: %02X\n", nibble);
-    printf("Instruction: %04X\n", inst);
-    printf("PC: %04X\n", chip.pc);
-    func_arr[nibble](inst, &chip);
-    print_registers(&chip);
+    Uint32 start_time = SDL_GetTicks();
+    for(int cycle = 0; cycle < 600 / 60; cycle++)
+    {
+      exit_chip8 = register_input(&ev, &chip);
+      if(exit_chip8)
+      {
+        break;
+      }
+
+      uint8_t nibble = chip.memory[chip.pc] >> 4;
+      uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
+      printf("Nibble: %02X\n", nibble);
+      printf("Instruction: %04X\n", inst);
+      printf("PC: %04X\n", chip.pc);
+      func_arr[nibble](inst, &chip);
+      print_registers(&chip);
+    }
+    tick(&chip);
     draw_frame(&renderer, &rect, &chip);
-    chip.delay_timer--;
-    chip.sound_timer--;
+    num_frames++;
+    if(num_frames == 60)
+    {
+      Uint32 elapsed_time = SDL_GetTicks() - start_time;
+      if(1000 - elapsed_time > 0)
+      {
+        SDL_Delay(1000 - elapsed_time);
+      }
+    }
   }
 }
