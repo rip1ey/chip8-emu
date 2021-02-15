@@ -19,9 +19,11 @@ void exec_0_op(uint16_t inst, chip8 *chip)
 			break;
 		case 0x00EE:
 			printf("00EE -> Return from subroutine\n");
+      chip->sp--;
 			uint16_t ret_addr = chip->stack[chip->sp];
-			chip->sp--;
 			chip->pc = ret_addr;
+      chip->stack[chip->sp] = 0;
+      print_stack(chip);
 			break;
 		default:
 			printf("0NNN -> Call routine at NNN\n");
@@ -42,9 +44,6 @@ void exec_1_op(uint16_t inst, chip8* chip)
   {
 	  chip->pc = inst & 0x0FFF;
   }
-  
-  uint16_t next_inst = chip->memory[chip->pc] << 8 | chip->memory[chip->pc + 1];
-  printf("Next instruction to be executed: %04X\n", next_inst);
 }
 
 /*
@@ -56,9 +55,10 @@ void exec_1_op(uint16_t inst, chip8* chip)
 void exec_2_op(uint16_t inst, chip8* chip)
 {
 	printf("2NNN -> Call routine at addr NNN\n");
-	chip->sp++;
 	chip->stack[chip->sp] = chip->pc+2;
+	chip->sp++;
 	chip->pc = inst & 0x0FFF;
+  print_stack(chip);
 }
 
 void exec_3_op(uint16_t inst, chip8* chip)
@@ -148,11 +148,14 @@ void exec_8_op(uint16_t inst, chip8* chip)
 			break;
 		case 0x04:
       printf("8XY4 -> Add Vy to Vx, set VF to 1 if carry, 0 otherwise\n");
-      chip->v[0xF] = 0;
 
       if(chip->v[x] + chip->v[y] > 255)
       {
         chip->v[0xF] = 1;
+      }
+      else
+      {
+        chip->v[0xF] = 0;
       }
       chip->v[x] += chip->v[y];
 			break;
@@ -170,10 +173,13 @@ void exec_8_op(uint16_t inst, chip8* chip)
       chip->v[x] -= chip->v[y];
 			break;
 		case 0x06:
-      printf("8XY6 -> Store value of Vy shifted right once in Vx. Set VF to lsb prior to shift\n");
-      chip->v[0xF] = chip->v[y] & 0x0001;
-      chip->v[x] = chip->v[y] >> 1;
+    {
+      printf("8XY6 -> Store value of Vx shifted right once in Vx. Set VF to lsb prior to shift\n");
+      uint8_t lsb = chip->v[x] & 0x0001;
+      chip->v[0xF] = lsb;
+      chip->v[x] = chip->v[x] >> 1;
 			break;
+    }
 		case 0x07:
       printf("8XY7 -> Set Vx to Vy minus Vx, VF is set to 0 when borrow, 1 otherwise\n");
       if(chip->v[x] > chip->v[y])
@@ -188,12 +194,14 @@ void exec_8_op(uint16_t inst, chip8* chip)
       chip->v[x] = chip->v[y] - chip->v[x];
 			break;
     case 0x0E:
-      printf("8XYE -> Store value of Vy shifted left once in Vx. Set VF to msb prior to shift\n");
-      printf("IN 8XYE, MSB OF VY: %d, VALUE OF VY: %d, VF BEFORE SHIFT: %d\n", (chip->v[y] & 0x80) >> 7, chip->v[y], chip->v[0xF]);
-      chip->v[0xF] = chip->v[y] >> 7;
-      chip->v[x] = chip->v[y] << 1;
+    {
+      printf("8XYE -> Store value of Vx shifted left once in Vx. Set VF to msb prior to shift\n");
+      uint8_t msb = chip->v[x] >> 7;
+      chip->v[0xF] = msb;
+      chip->v[x] = chip->v[x] << 1;
       printf("VF AFTER SHIFT: %d\n", chip->v[0xF]);
       break;
+    }
 	}
 	chip->pc+=2;
 }
@@ -357,7 +365,7 @@ void exec_F_op(uint16_t inst, chip8* chip)
       chip->pc+=2;
 			break;
 		case 0x29:
-      printf("FX29 -> Set reg I to sprite in Vx\n");
+      printf("FX29 -> Set reg I to sprite in V[%d] = %02X\n", x, chip->v[x]);
       chip->i = chip->v[x] * 5;
       chip->pc+=2;
 			break;

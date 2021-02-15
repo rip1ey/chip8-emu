@@ -239,8 +239,7 @@ int main(int argc, char *argv[])
   int num_frames = 1;
   while(!exit_chip8)
   {
-    Uint32 start_time = SDL_GetTicks();
-    for(int cycle = 0; cycle < 600 / 60; cycle++)
+    for(int cycle = 0; cycle < 540 / 60; cycle++)
     {
       exit_chip8 = register_input(&ev, &chip);
       if(exit_chip8)
@@ -250,22 +249,13 @@ int main(int argc, char *argv[])
 
       uint8_t nibble = chip.memory[chip.pc] >> 4;
       uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
-      printf("Nibble: %02X\n", nibble);
-      printf("Instruction: %04X\n", inst);
-      printf("PC: %04X\n", chip.pc);
+      //printf("Nibble: %02X\n", nibble);
+      printf("PC: 0x%04X, OP: 0x%04X\n", chip.pc, inst);
+      //printf("Instruction: %04X\n", inst);
       func_arr[nibble](inst, &chip);
       print_registers(&chip);
     }
     tick(&chip);
     draw_frame(&renderer, &rect, &chip);
-    num_frames++;
-    if(num_frames == 60)
-    {
-      Uint32 elapsed_time = SDL_GetTicks() - start_time;
-      if(1000 - elapsed_time > 0)
-      {
-        SDL_Delay(1000 - elapsed_time);
-      }
-    }
   }
 }

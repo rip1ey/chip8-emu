@@ -37,6 +37,7 @@ typedef struct
 } chip8;
 
 void print_registers(chip8 *);
+void print_stack(chip8 *);
 void clear_screen(chip8 *);
 void init_chip8_state(chip8 *);
 void load_rom(char *, chip8 *);

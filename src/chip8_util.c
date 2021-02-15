@@ -13,6 +13,14 @@ void print_registers(chip8 *chip)
   }
 }
 
+void print_stack(chip8 *chip)
+{
+  for(int i = 0; i < 16; i++)
+  {
+    printf("Stack[%d]: 0x%04X\n", i, chip->stack[i]);
+  }
+}
+
 uint8_t font_set[80] =
 {
   0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
