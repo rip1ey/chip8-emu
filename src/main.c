@@ -10,8 +10,6 @@ void draw_frame(SDL_Renderer **renderer, SDL_Rect *rect, chip8 *chip)
 {
   rect->w = SCALE;
   rect->h = SCALE;
-  //rect->w = WINDOW_WIDTH;
-  //rect->h = WINDOW_HEIGHT;
   SDL_SetRenderDrawColor(*renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(*renderer);
 
@@ -148,12 +146,11 @@ int register_input(SDL_Event *ev, chip8 *chip)
           break;
       }
     }
-
   }
   return 0;
 }
 
-void tick(chip8 *chip)
+void dec_timers(chip8 *chip)
 {
   if(chip->sound_timer > 0)
   {
@@ -164,6 +161,48 @@ void tick(chip8 *chip)
   {
     chip->delay_timer--;
   }
+}
+
+int sdl_setup(SDL_Window **window, SDL_Renderer **renderer)
+{
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
+  {
+    SDL_Log("Failed to initialize SDL: %s\n", SDL_GetError());
+    return -1;
+  }
+
+  *window = SDL_CreateWindow("Chip8 Emu",
+                            SDL_WINDOWPOS_CENTERED,
+                            SDL_WINDOWPOS_CENTERED,
+                            WINDOW_WIDTH,
+                            WINDOW_HEIGHT,
+                            SDL_WINDOW_ALLOW_HIGHDPI);
+  if(*window == NULL)
+  {
+    SDL_Log("Failed to create window: %s\n", SDL_GetError());
+    SDL_Quit();
+    return -1;
+  }
+
+  *renderer = SDL_CreateRenderer(*window, -1, SDL_RENDERER_ACCELERATED);
+  if(*renderer == NULL)
+  {
+    SDL_Log("Failed to create renderer: %s\n", SDL_GetError());
+    SDL_DestroyWindow(*window);
+    SDL_Quit();
+    return -1;
+  }
+
+  if(SDL_RenderSetLogicalSize(*renderer, WINDOW_WIDTH, WINDOW_HEIGHT) < 0)
+  {
+    SDL_Log("Failed to set proper renderer size: %s\n", SDL_GetError());
+    SDL_DestroyWindow(*window);
+    SDL_DestroyRenderer(*renderer);
+    SDL_Quit();
+    return -1;
+  }
+
+  return 0;
 }
 
 int main(int argc, char *argv[])
@@ -181,43 +220,12 @@ int main(int argc, char *argv[])
   SDL_Window *window;
   SDL_Renderer *renderer;
   SDL_Texture *texture;
-  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0)
+
+  if(sdl_setup(&window, &renderer) < 0)
   {
-    SDL_Log("Failed to initialize SDL: %s\n", SDL_GetError());
+    printf("SDL could not be initialized\n");
     return -1;
   }
-
-  window = SDL_CreateWindow("Chip8 Emu",
-                            SDL_WINDOWPOS_CENTERED,
-                            SDL_WINDOWPOS_CENTERED,
-                            WINDOW_WIDTH,
-                            WINDOW_HEIGHT,
-                            SDL_WINDOW_ALLOW_HIGHDPI);
-  if(window == NULL)
-  {
-    SDL_Log("Failed to create window: %s\n", SDL_GetError());
-    SDL_Quit();
-    return -1;
-  }
-
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-  if(renderer == NULL)
-  {
-    SDL_Log("Failed to create renderer: %s\n", SDL_GetError());
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return -1;
-  }
-
-  if(SDL_RenderSetLogicalSize(renderer, WINDOW_WIDTH, WINDOW_HEIGHT) < 0)
-  {
-    SDL_Log("Failed to set proper renderer size: %s\n", SDL_GetError());
-    SDL_DestroyWindow(window);
-    SDL_DestroyRenderer(renderer);
-    SDL_Quit();
-    return -1;
-  }
-
   init_chip8_state(&chip);
   load_rom(argv[1], &chip);
   srand(time(0));
@@ -232,23 +240,25 @@ int main(int argc, char *argv[])
   };
 
   exit_chip8 = 0;
-  int num_frames = 1;
   while(!exit_chip8)
   {
-    for(int cycle = 0; cycle < 440 / 60; cycle++)
+    for(int cycle = 0; cycle < 11; cycle++)
     {
       uint8_t nibble = chip.memory[chip.pc] >> 4;
       uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
       printf("PC: 0x%04X, OP: 0x%04X\n", chip.pc, inst);
       func_arr[nibble](inst, &chip);
-      print_registers(&chip);
       exit_chip8 = register_input(&ev, &chip);
       if(exit_chip8)
       {
         break;
       }
     }
-    tick(&chip);
+    dec_timers(&chip);
     draw_frame(&renderer, &rect, &chip);
   }
+
+  SDL_DestroyWindow(window);
+  SDL_DestroyRenderer(renderer);
+  SDL_Quit();
 }

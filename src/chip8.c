@@ -255,7 +255,6 @@ void exec_D_op(uint16_t inst, chip8* chip)
   y = chip->v[(inst & 0x00F0) >> 4];
 
   chip->v[0xF] = 0;
-  uint8_t bit_set = 0;
   print_sprite_data(chip, n, chip->i);
   // grab the sprite data from memory location
   // in i register
@@ -279,7 +278,6 @@ void exec_D_op(uint16_t inst, chip8* chip)
       if(gfx_pixel == 1 && chip->graphics[x_coord][y_coord] == 0)
       {
         chip->v[0xF] = 1;
-        bit_set = 0;
       }
       mask /= 2;
       shift--;
