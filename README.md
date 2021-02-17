@@ -1,6 +1,6 @@
 ## Chip8 Emulator
 
-This a Chip8 emulator (interpreter technically) developed
+This is a Chip8 emulator (interpreter technically) developed
 with c and the SDL2 library. This emulator does not support
 audio at this time.
 
