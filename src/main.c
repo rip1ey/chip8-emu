@@ -10,6 +10,8 @@ void draw_frame(SDL_Renderer **renderer, SDL_Rect *rect, chip8 *chip)
 {
   rect->w = SCALE;
   rect->h = SCALE;
+  //rect->w = WINDOW_WIDTH;
+  //rect->h = WINDOW_HEIGHT;
   SDL_SetRenderDrawColor(*renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
   SDL_RenderClear(*renderer);
 
@@ -20,14 +22,10 @@ void draw_frame(SDL_Renderer **renderer, SDL_Rect *rect, chip8 *chip)
       if(chip->graphics[x][y])
       {
         SDL_SetRenderDrawColor(*renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+        rect->x = x * SCALE;
+        rect->y = y * SCALE;
+        SDL_RenderFillRect(*renderer, rect);
       }
-      else
-      {
-        SDL_SetRenderDrawColor(*renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-      }
-      rect->x = x * SCALE;
-      rect->y = y * SCALE;
-      SDL_RenderFillRect(*renderer, rect);
     }
   }
 
@@ -178,8 +176,6 @@ int main(int argc, char *argv[])
     print_emu_usage();
   }
 
-//        SDL
-// -------------------
   SDL_Event ev;
   SDL_Rect rect;
   SDL_Window *window;
@@ -239,21 +235,18 @@ int main(int argc, char *argv[])
   int num_frames = 1;
   while(!exit_chip8)
   {
-    for(int cycle = 0; cycle < 540 / 60; cycle++)
+    for(int cycle = 0; cycle < 440 / 60; cycle++)
     {
+      uint8_t nibble = chip.memory[chip.pc] >> 4;
+      uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
+      printf("PC: 0x%04X, OP: 0x%04X\n", chip.pc, inst);
+      func_arr[nibble](inst, &chip);
+      print_registers(&chip);
       exit_chip8 = register_input(&ev, &chip);
       if(exit_chip8)
       {
         break;
       }
-
-      uint8_t nibble = chip.memory[chip.pc] >> 4;
-      uint16_t inst = chip.memory[chip.pc] << 8 | chip.memory[chip.pc + 1];
-      //printf("Nibble: %02X\n", nibble);
-      printf("PC: 0x%04X, OP: 0x%04X\n", chip.pc, inst);
-      //printf("Instruction: %04X\n", inst);
-      func_arr[nibble](inst, &chip);
-      print_registers(&chip);
     }
     tick(&chip);
     draw_frame(&renderer, &rect, &chip);

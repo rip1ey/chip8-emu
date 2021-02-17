@@ -32,12 +32,13 @@ typedef struct
 	uint8_t delay_timer;
 
   uint8_t keypad[16];
-
 	uint8_t graphics[WIDTH][HEIGHT];
 } chip8;
 
-void print_registers(chip8 *);
+void print_gfx(chip8 *);
 void print_stack(chip8 *);
+void print_registers(chip8 *);
+void print_sprite_data(chip8 *, int, uint16_t);
 void clear_screen(chip8 *);
 void init_chip8_state(chip8 *);
 void load_rom(char *, chip8 *);
